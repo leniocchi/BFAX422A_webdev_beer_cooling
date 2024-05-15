@@ -1,0 +1,52 @@
+openapi: 3.0.0
+servers:
+  - url: 'http://127.0.0.1:8080'
+info:
+  description: >-
+    Chat API.
+  version: 1.0.0
+  title: OpenAPI Chats
+tags:
+  - name: chat
+    description: Everything about Chats
+paths:
+  /chat:
+    post:
+      tags:
+        - chat
+      summary: Get answer to the passed message
+      operationId: chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '405':
+          description: Invalid input
+components:
+  schemas:
+    Message:
+      title: Chat message
+      description: A message, with author and date
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+        author:
+          type: string
+          description: Author of the message
+          enum:
+            - user
+            - system
+            - ai
