@@ -24,10 +24,10 @@ class AiApp extends StatelessWidget {
     return MaterialApp(
       title: 'Chat Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 209, 170, 32)),
         useMaterial3: true,
       ),
-      home: const HomePage(title: 'Chat Demo Home Page'),
+      home: SplashScreen(),
     );
   }
 }
