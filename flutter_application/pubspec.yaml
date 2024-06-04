@@ -33,6 +33,7 @@ dependencies:
   provider: ^6.1.2
   openapi:
     path: ../openapi
+  http: ^0.13.3
 
 
   # The following adds the Cupertino Icons font to your application.
