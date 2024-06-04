@@ -7,9 +7,11 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:http/http.dart' as http;
 
 import 'ai/ai.dart';
 import 'ai/openai.dart';
+
 
 class EnvVariables {
   static final port = 'CHAT_SERVER_PORT';

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application/splashscreen.dart';
 import 'package:openapi/api.dart';
 import 'package:provider/provider.dart';
-import 'homepage.dart';
-
 
 
 void main() {
