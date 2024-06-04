@@ -6,59 +6,11 @@ import 'package:openapi/api.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
+import 'beer/beer_information.dart';
+import 'beer/cooling_calc.dart';
+import 'beer/storage_helper.dart';
 
-// Klasse zur Speicherung der Bierinformationen
-class BeerInformation {
-  String typeOfBeer;
-  double container;
-  double whereWasTheBeer;
-  double whereToCoolTheBeer;
-  double desiredTemperature;
-  TimeOfDay selectedStartTime;
-  TimeOfDay calculatedCoolingTime;
 
-  BeerInformation({
-    required this.typeOfBeer,
-    required this.container,
-    required this.whereWasTheBeer,
-    required this.whereToCoolTheBeer,
-    required this.desiredTemperature,
-    required this.selectedStartTime,
-    required this.calculatedCoolingTime,
-  });
-
-  factory BeerInformation.fromJson(Map<String, dynamic> json) {
-    return BeerInformation(
-      typeOfBeer: json['typeOfBeer'],
-      container: json['container'],
-      whereWasTheBeer: json['whereWasTheBeer'],
-      whereToCoolTheBeer: json['whereToCoolTheBeer'],
-      desiredTemperature: json['desiredTemperature'],
-      selectedStartTime: TimeOfDay(
-        hour: int.parse(json['selectedStartTime'].split(":")[0]),
-        minute: int.parse(json['selectedStartTime'].split(":")[1]),
-      ),
-      calculatedCoolingTime: TimeOfDay(
-        hour: int.parse(json['calculatedCoolingTime'].split(":")[0]),
-        minute: int.parse(json['calculatedCoolingTime'].split(":")[1]),
-      ),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'typeOfBeer': typeOfBeer,
-      'container': container,
-      'whereWasTheBeer': whereWasTheBeer,
-      'whereToCoolTheBeer': whereToCoolTheBeer,
-      'desiredTemperature': desiredTemperature,
-      'selectedStartTime': '${selectedStartTime.hour}:${selectedStartTime.minute}',
-      'calculatedCoolingTime': '${calculatedCoolingTime.hour}:${calculatedCoolingTime.minute}',
-    };
-  }
-}
-
-// Homepage: 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
 
@@ -70,8 +22,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  ChatApi? _api;
-
   List<BeerInformation> beerList = [];
 
   String selectedTypeOfBeer = '';
@@ -82,9 +32,6 @@ class _HomePageState extends State<HomePage> {
   TimeOfDay selectedStartTime = TimeOfDay.now();
   TimeOfDay calculatedCoolingTime = TimeOfDay.now();
 
-  String _aiAnswer = "";
-
-  // Funktion zum Erstellen des BeerInformation-Objekts
   BeerInformation _createBeerInformationObject() {
     return BeerInformation(
       typeOfBeer: selectedTypeOfBeer,
@@ -97,7 +44,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Funktion zum Speichern des BeerInformation-Objekts und Durchführen der weiteren Logik
+  @override
+  void initState() {
+    super.initState();
+    _loadBeerList();
+  }
+
+  Future<void> _loadBeerList() async {
+    List<BeerInformation> loadedBeerList = await loadBeerList();
+    setState(() {
+      beerList = loadedBeerList;
+    });
+  }
+
   void _setUserInput() {
 
     BeerInformation beerInformation = _createBeerInformationObject();
@@ -106,6 +65,8 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       beerList.add(beerInformation);
     });
+
+    saveBeerList(beerList);
   }
 
   Future<void> _selectTime(BuildContext context) async {
@@ -120,30 +81,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // TODO: Funktion zum Berechnen der Kühlzeit
-  TimeOfDay calculateCoolingTime(BeerInformation beerInfo) {
-    double mass = beerInfo.container; // Volumen des Biers in kg (1L = 1kg für Wasser)
-    double specificHeatCapacity = 4180; // spezifische Wärmekapazität in J/(kg·K)
-    double initialTemperature = beerInfo.whereWasTheBeer; // Starttemperatur in °C
-    double finalTemperature = beerInfo.desiredTemperature; // Endtemperatur in °C
-
-    double temperatureDifference = initialTemperature - finalTemperature; // Temperaturdifferenz in °C
-
-    double coolingConstant = 0.05; // Ein angenommener Konstante für den Kühlprozess (z.B. in K/min)
-    double coolingTimeMinutes = (mass * specificHeatCapacity * temperatureDifference) / (coolingConstant * 60 * 1000); // Zeit in Minuten
-
-    // Berechnung der Stunden und Minuten aus der Gesamtzeit in Minuten
-    int coolingHours = (coolingTimeMinutes / 60).floor();
-    int coolingMinutes = (coolingTimeMinutes % 60).round();
-
-    // Hinzufügen der Kühlzeit zur Startzeit
-    int endHour = (beerInfo.selectedStartTime.hour + coolingHours + (beerInfo.selectedStartTime.minute + coolingMinutes) ~/ 60) % 24;
-    int endMinute = (beerInfo.selectedStartTime.minute + coolingMinutes) % 60;
-
-    return TimeOfDay(hour: endHour, minute: endMinute);
-  }
-
-  // function to ask AI
   void _askAI(BuildContext context, BeerInformation beerInfo, int iconbutton) async {
 
     final api = Provider.of<ChatApi>(context, listen: false);
@@ -176,13 +113,6 @@ class _HomePageState extends State<HomePage> {
   }
   }
 
-  // void _setAiAnswer(Message message) {
-  //   setState(() {
-  //     _aiAnswer = message.message ?? "<no message received>";
-  //   });
-  // }
-
-  // Funktion zum Anzeigen der Antwort im Popup-Fenster
   void _showResponseDialog(BuildContext context, String response, int iconbutton) {
     
     String dialogTile;
@@ -223,7 +153,6 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // Oberer Teil: Neues Bier kalt stellen
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -288,9 +217,10 @@ class _HomePageState extends State<HomePage> {
                 trailing: DropdownButton<double>(
                   value: selectedWhereToCoolTheBeer,
                   items: <double>[
+                    -18.0,
+                    0.0,
                     4.0,
-                    5.0,
-                    6.0
+                    15.0
                   ].map((double value) {
                     return DropdownMenuItem<double>(
                       value: value,
@@ -310,8 +240,8 @@ class _HomePageState extends State<HomePage> {
                   value: selectedDesiredTemperature,
                   items: <double>[
                       4.0,
-                      5.0,
-                      6.0
+                      6.0,
+                      8.0,
                     ]
                       .map((double value) {
                     return DropdownMenuItem<double>(
@@ -342,12 +272,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          // Trennlinie
           const Divider(
             height: 1,
             color: Colors.grey,
           ),
-          // Unterer Teil: Liste der kaltgestellten Biere
           Expanded(
             child: ListView.builder(
               itemCount: beerList.length,
@@ -368,28 +296,27 @@ class _HomePageState extends State<HomePage> {
         Expanded(
           child: ListTile(
             title: Text(beerInfo.typeOfBeer),
-            // weitere informationen des element drunter anzeigen lassen 
           ),
         ),
         Text('${beerInfo.selectedStartTime.hour}:${beerInfo.selectedStartTime.minute}'),
         const SizedBox(width: 16), 
         Text('${beerInfo.calculatedCoolingTime.hour}:${beerInfo.calculatedCoolingTime.minute}'),
         const SizedBox(width: 12), 
-        // function: get drinking toast
         IconButton(
           icon: const Icon(Icons.celebration),
           onPressed: () => _askAI(context, beerInfo, 1),
         ),
-        // function: get random information about the sort of beer
         IconButton(
           icon: const Icon(Icons.info),
           onPressed: () => _askAI(context, beerInfo, 2),
         ),
-        // function: delete beer item from beerlist
         IconButton(
           icon: const Icon(Icons.delete),
           onPressed: () {
-
+            setState(() {
+              beerList.remove(beerInfo);
+            });
+            saveBeerList(beerList);
           },
         ),
       ],

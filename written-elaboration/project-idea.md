@@ -1,5 +1,7 @@
 # Web-Entwicklung: Beer-Cooling
 
+- https://www.omnicalculator.com/de/ernaehrung/gekuehlte-getraenke-rechner
+
 I want to develop a web-app where the user gets information about the cooling time of beer.
 
 User decides between different selection options:
@@ -57,3 +59,13 @@ User decides between different selection options:
 * get: additional information (maybe fun facts) about the beer
 * get: a specific drinking toast to the selected type of beer (-> chatgpt)
 * Wine
+
+
+## Umsetzung
+
+1. welcome page with a beer icon
+2. homepage:
+    - if (list = empty) -> show a image and a button to add element
+    - if (list != empty) -> show list and add button in corner
+
+    - add button -> show formsjetzt

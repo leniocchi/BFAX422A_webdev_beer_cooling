@@ -23,7 +23,7 @@ class AiApp extends StatelessWidget {
     return MaterialApp(
       title: 'Chat Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 209, 170, 32)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 209, 170, 32)),
         useMaterial3: true,
       ),
       home: const SplashScreen(),
