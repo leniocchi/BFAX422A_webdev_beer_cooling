@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:openapi/api.dart';
@@ -8,23 +9,53 @@ import 'package:http/http.dart' as http;
 
 // Klasse zur Speicherung der Bierinformationen
 class BeerInformation {
-  String? typeOfBeer;
-  String? container;
-  String? whereWasTheBeer;
-  String? whereToCoolTheBeer;
-  String? desiredTemperature;
-  TimeOfDay? selectedStartTime;
-  TimeOfDay? calculatedCoolingTime;
+  String typeOfBeer;
+  double container;
+  double whereWasTheBeer;
+  double whereToCoolTheBeer;
+  double desiredTemperature;
+  TimeOfDay selectedStartTime;
+  TimeOfDay calculatedCoolingTime;
 
   BeerInformation({
-    this.typeOfBeer,
-    this.container,
-    this.whereWasTheBeer,
-    this.whereToCoolTheBeer,
-    this.desiredTemperature,
-    this.selectedStartTime,
-    this.calculatedCoolingTime,
+    required this.typeOfBeer,
+    required this.container,
+    required this.whereWasTheBeer,
+    required this.whereToCoolTheBeer,
+    required this.desiredTemperature,
+    required this.selectedStartTime,
+    required this.calculatedCoolingTime,
   });
+
+  factory BeerInformation.fromJson(Map<String, dynamic> json) {
+    return BeerInformation(
+      typeOfBeer: json['typeOfBeer'],
+      container: json['container'],
+      whereWasTheBeer: json['whereWasTheBeer'],
+      whereToCoolTheBeer: json['whereToCoolTheBeer'],
+      desiredTemperature: json['desiredTemperature'],
+      selectedStartTime: TimeOfDay(
+        hour: int.parse(json['selectedStartTime'].split(":")[0]),
+        minute: int.parse(json['selectedStartTime'].split(":")[1]),
+      ),
+      calculatedCoolingTime: TimeOfDay(
+        hour: int.parse(json['calculatedCoolingTime'].split(":")[0]),
+        minute: int.parse(json['calculatedCoolingTime'].split(":")[1]),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'typeOfBeer': typeOfBeer,
+      'container': container,
+      'whereWasTheBeer': whereWasTheBeer,
+      'whereToCoolTheBeer': whereToCoolTheBeer,
+      'desiredTemperature': desiredTemperature,
+      'selectedStartTime': '${selectedStartTime.hour}:${selectedStartTime.minute}',
+      'calculatedCoolingTime': '${calculatedCoolingTime.hour}:${calculatedCoolingTime.minute}',
+    };
+  }
 }
 
 // Homepage: 
@@ -43,15 +74,21 @@ class _HomePageState extends State<HomePage> {
 
   List<BeerInformation> beerList = [];
 
-  String? selectedTypeOfBeer;
-  String? selectedContainer;
-  String? selectedWhereWasTheBeer;
-  String? selectedWhereToCoolTheBeer;
-  String? selectedDesiredTemperature;
-  TimeOfDay? _selectedStartTime;
-  TimeOfDay? calculatedCoolingTime;
+  String selectedTypeOfBeer = '';
+  double selectedContainer = 0.33;
+  double selectedWhereWasTheBeer = 20.0;
+  double selectedWhereToCoolTheBeer = 4.0;
+  double selectedDesiredTemperature = 4.0;
+  TimeOfDay selectedStartTime = TimeOfDay.now();
+  TimeOfDay calculatedCoolingTime = TimeOfDay.now();
 
-  String? _aiAnswer = "";
+  String _aiAnswer = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _api = Provider.of<ChatApi>(context, listen: false);
+  }
 
   // Funktion zum Erstellen des BeerInformation-Objekts
   BeerInformation _createBeerInformationObject() {
@@ -61,30 +98,20 @@ class _HomePageState extends State<HomePage> {
       whereWasTheBeer: selectedWhereWasTheBeer,
       whereToCoolTheBeer: selectedWhereToCoolTheBeer,
       desiredTemperature: selectedDesiredTemperature,
-      selectedStartTime: _selectedStartTime,
+      selectedStartTime: selectedStartTime,
+      calculatedCoolingTime: calculatedCoolingTime,
     );
   }
 
   // Funktion zum Speichern des BeerInformation-Objekts und Durchführen der weiteren Logik
   void _setUserInput() {
+
     BeerInformation beerInformation = _createBeerInformationObject();
+    beerInformation.calculatedCoolingTime = calculateCoolingTime(beerInformation);
     
-    BeerInformation responseBeerInformation = _getCoolingTime(beerInformation);
-
     setState(() {
-      beerList.add(responseBeerInformation);
+      beerList.add(beerInformation);
     });
-  }
-
-  // Funktion um ChatGPT nach der Kühlzeit zu fragen
-  BeerInformation _getCoolingTime(BeerInformation beerInformation) {
-
-    // Wie lange dauert es, bis ein Getränk der Sorte {selectedTypeOfBeer} in einem {selectedContainer}, das sich vorher an {selectedWhereWasTheBeer} befand, 
-    // auf {selectedDesiredTemperature} abgekühlt ist, wenn es seit {_selectedStartTime} in {selectedWhereToCoolTheBeer} gekühlt wird?
-
-    return BeerInformation(
-      calculatedCoolingTime: calculatedCoolingTime
-    );
   }
 
   Future<void> _selectTime(BuildContext context) async {
@@ -92,12 +119,41 @@ class _HomePageState extends State<HomePage> {
       context: context,
       initialTime: TimeOfDay.now(),
     );
-    if (pickedTime != null && pickedTime != _selectedStartTime) {
+    if (pickedTime != null && pickedTime != selectedStartTime) {
       setState(() {
-        _selectedStartTime = pickedTime;
+        selectedStartTime = pickedTime;
       });
     }
   }
+
+  // TODO: Funktion zum Berechnen der Kühlzeit
+  TimeOfDay calculateCoolingTime(BeerInformation beerInfo) {
+    double mass = beerInfo.container; // Volumen des Biers in kg (1L = 1kg für Wasser)
+    double specificHeatCapacity = 4180; // spezifische Wärmekapazität in J/(kg·K)
+    double initialTemperature = beerInfo.whereWasTheBeer; // Starttemperatur in °C
+    double finalTemperature = beerInfo.desiredTemperature; // Endtemperatur in °C
+
+    double temperatureDifference = initialTemperature - finalTemperature; // Temperaturdifferenz in °C
+
+    double coolingConstant = 0.05; // Ein angenommener Konstante für den Kühlprozess (z.B. in K/min)
+    double coolingTimeMinutes = (mass * specificHeatCapacity * temperatureDifference) / (coolingConstant * 60 * 1000); // Zeit in Minuten
+
+    // Berechnung der Stunden und Minuten aus der Gesamtzeit in Minuten
+    int coolingHours = (coolingTimeMinutes / 60).floor();
+    int coolingMinutes = (coolingTimeMinutes % 60).round();
+
+    // Hinzufügen der Kühlzeit zur Startzeit
+    int endHour = (beerInfo.selectedStartTime.hour + coolingHours + (beerInfo.selectedStartTime.minute + coolingMinutes) ~/ 60) % 24;
+    int endMinute = (beerInfo.selectedStartTime.minute + coolingMinutes) % 60;
+
+    return TimeOfDay(hour: endHour, minute: endMinute);
+  }
+
+  // function: get drinking toast
+
+  // function: get random information about the sort of beer
+
+  // function: delete beer item from beerlist
 
   @override
   Widget build(BuildContext context) {
@@ -114,11 +170,11 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ListTile(
-                title: Text('Type of Beer'),
-                trailing: Container(
+                title: const Text('Type of Beer'),
+                trailing: SizedBox(
                   width: 200,
                   child: TextField(
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Enter the type of beer',
                     ),
                     onChanged: (value) {
@@ -128,108 +184,108 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               ListTile(
-                title: Text('Bottle/Container'),
-                trailing: DropdownButton<String>(
+                title: const Text('Bottle/Container'),
+                trailing: DropdownButton<double>(
                   value: selectedContainer,
-                  items: <String?>[
-                    'Small Glas Bottle (8.5 oz / 0.25L)',
-                    'Medium Glass Bottle (330ml)',
-                    'Glass Bottle (16.9 oz / 0.5L)'
-                  ].map((String? value) {
-                    return DropdownMenuItem<String>(
+                  items: <double>[
+                    0.25,
+                    0.33,
+                    0.5
+                  ].map((double value) {
+                    return DropdownMenuItem<double>(
                       value: value,
-                      child: Text(value ?? ''),
+                      child: Text('$value L'),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (double? newValue) {
                     setState(() {
-                      selectedContainer = newValue;
+                      selectedContainer = newValue!;
                     });
                   },
                 ),
               ),
               ListTile(
-                title: Text('Where was the beer?'),
-                trailing: DropdownButton<String>(
+                title: const Text('Where was the beer?'),
+                trailing: DropdownButton<double>(
                   value: selectedWhereWasTheBeer,
-                  items: <String?>[
-                    'Hot summer day (30°C / 86F)',
-                    'Cloudy day (20°C/68F)',
-                    'Room temperature (16.5°C/61.7F)',
-                    'Custom'
-                  ].map((String? value) {
-                    return DropdownMenuItem<String>(
+                  items: <double>[
+                    30.0,
+                    20.0,
+                    16.5
+                  ].map((double value) {
+                    return DropdownMenuItem<double>(
                       value: value,
-                      child: Text(value ?? ''),
+                      child: Text('$value °C'),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (double? newValue) {
                     setState(() {
-                      selectedWhereWasTheBeer = newValue;
+                      selectedWhereWasTheBeer = newValue!;
                     });
                   },
                 ),
               ),
               ListTile(
-                title: Text('Where do you want to cool the beer?'),
-                trailing: DropdownButton<String>(
+                title: const Text('Where do you want to cool the beer?'),
+                trailing: DropdownButton<double>(
                   value: selectedWhereToCoolTheBeer,
-                  items: <String?>[
-                    'Fridge (4°C/39F)',
-                    'Freezer (-18°C/-0.4F)',
-                    'Custom (air)',
-                    'Custom (water)'
-                  ].map((String? value) {
-                    return DropdownMenuItem<String>(
+                  items: <double>[
+                    4.0,
+                    5.0,
+                    6.0
+                  ].map((double value) {
+                    return DropdownMenuItem<double>(
                       value: value,
-                      child: Text(value ?? ''),
+                      child: Text('$value °C'),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (double? newValue) {
                     setState(() {
-                      selectedWhereToCoolTheBeer = newValue;
+                      selectedWhereToCoolTheBeer = newValue!;
                     });
                   },
                 ),
               ),
               ListTile(
-                title: Text('Desired temperature'),
-                trailing: DropdownButton<String>(
+                title: const Text('Desired temperature'),
+                trailing: DropdownButton<double>(
                   value: selectedDesiredTemperature,
-                  items: <String?>['Optimal', 'Custom']
-                      .map((String? value) {
-                    return DropdownMenuItem<String>(
+                  items: <double>[
+                      4.0,
+                      5.0,
+                      6.0
+                    ]
+                      .map((double value) {
+                    return DropdownMenuItem<double>(
                       value: value,
-                      child: Text(value ?? ''),
+                      child: Text('$value °C'),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (double? newValue) {
                     setState(() {
-                      selectedDesiredTemperature = newValue;
+                      selectedDesiredTemperature = newValue!;
                     });
                   },
                 ),
               ),
               ListTile(
-                title: Text('Select Time'),
+                title: const Text('Select Time'),
                 trailing: ElevatedButton(
                   onPressed: () {
                     _selectTime(context);
                   },
-                  child: Text(_selectedStartTime != null
-                      ? '${_selectedStartTime!.hour}:${_selectedStartTime!.minute}'
-                      : 'Select Time'),
+                  child: Text('${selectedStartTime!.hour}:${selectedStartTime!.minute}'),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _setUserInput,
-                child: Text('Click to cool your beer'),
+                child: const Text('Click to cool your beer'),
               ),
             ],
           ),
           // Trennlinie
-          Divider(
+          const Divider(
             height: 1,
             color: Colors.grey,
           ),
@@ -254,26 +310,28 @@ Widget _buildListRow(BeerInformation beerInfo) {
     children: [
       Expanded(
         child: ListTile(
-          title: Text('${beerInfo.typeOfBeer}'),
+          title: Text(beerInfo.typeOfBeer),
           // weitere informationen des element drunter anzeigen lassen 
         ),
       ),
-      Text('${beerInfo.selectedStartTime?.hour}:${beerInfo.selectedStartTime?.minute}'),
-      Text('End time'), // Timer hier einfügen
+      Text('${beerInfo.selectedStartTime.hour}:${beerInfo.selectedStartTime.minute}'),
+      const SizedBox(width: 16), 
+      Text('${beerInfo.calculatedCoolingTime.hour}:${beerInfo.calculatedCoolingTime.minute}'),
+      const SizedBox(width: 12), 
       IconButton(
-        icon: Icon(Icons.celebration),
+        icon: const Icon(Icons.celebration),
         onPressed: () {
           // Aktion für das erste Icon
         },
       ),
       IconButton(
-        icon: Icon(Icons.info),
+        icon: const Icon(Icons.info),
         onPressed: () {
           // Aktion für das zweite Icon
         },
       ),
       IconButton(
-        icon: Icon(Icons.delete),
+        icon: const Icon(Icons.delete),
         onPressed: () {
           // Aktion für das dritte Icon
         },
