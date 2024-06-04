@@ -84,12 +84,6 @@ class _HomePageState extends State<HomePage> {
 
   String _aiAnswer = "";
 
-  @override
-  void initState() {
-    super.initState();
-    _api = Provider.of<ChatApi>(context, listen: false);
-  }
-
   // Funktion zum Erstellen des BeerInformation-Objekts
   BeerInformation _createBeerInformationObject() {
     return BeerInformation(
@@ -149,15 +143,64 @@ class _HomePageState extends State<HomePage> {
     return TimeOfDay(hour: endHour, minute: endMinute);
   }
 
-  // function: get drinking toast
+  // function to ask AI
+  void _askAI(BuildContext context, BeerInformation beerInfo) async {
 
-  // function: get random information about the sort of beer
+    final api = Provider.of<ChatApi>(context, listen: false);
 
-  // function: delete beer item from beerlist
+    var message = Message(
+      timestamp: DateTime.now().toUtc(),
+      author: MessageAuthorEnum.user,
+      message: "Gib einen witzigen Trinkspruch für das folgende Bier: ${beerInfo.typeOfBeer}",
+    );
+
+    try {
+      // Senden der Anfrage
+      var response = await api.chat(message);
+
+      // Überprüfen, ob die Antwort nicht null ist
+      if (response != null && response.message != null) {
+        // Anzeigen der Antwort im Popup-Fenster
+        _showResponseDialog(context, response.message!);
+      } else {
+        // Falls die Antwort null ist, eine Fehlermeldung anzeigen
+        _showResponseDialog(context, "No response received from OpenAPI.");
+      }
+    } catch (e) {
+      // Fehlerbehandlung und Anzeige einer Fehlermeldung
+      _showResponseDialog(context, "Error: $e");
+  }
+  }
+
+  void _setAiAnswer(Message message) {
+    setState(() {
+      _aiAnswer = message.message ?? "<no message received>";
+    });
+  }
+
+  // Funktion zum Anzeigen der Antwort im Popup-Fenster
+  void _showResponseDialog(BuildContext context, String response) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Trinkspruch'),
+          content: Text(response),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -294,7 +337,7 @@ class _HomePageState extends State<HomePage> {
             child: ListView.builder(
               itemCount: beerList.length,
               itemBuilder: (BuildContext context, int index) {
-                return _buildListRow(beerList[index]);
+                return _buildListRow(context, beerList[index]);
               },
             ),
           ),
@@ -302,40 +345,45 @@ class _HomePageState extends State<HomePage> {
       )
     );
   }
+
+  // Funktion zum Erstellen einer Zeile in der Liste
+  Widget _buildListRow(BuildContext context, BeerInformation beerInfo) {
+    return Row(
+      children: [
+        Expanded(
+          child: ListTile(
+            title: Text(beerInfo.typeOfBeer),
+            // weitere informationen des element drunter anzeigen lassen 
+          ),
+        ),
+        Text('${beerInfo.selectedStartTime.hour}:${beerInfo.selectedStartTime.minute}'),
+        const SizedBox(width: 16), 
+        Text('${beerInfo.calculatedCoolingTime.hour}:${beerInfo.calculatedCoolingTime.minute}'),
+        const SizedBox(width: 12), 
+        // function: get drinking toast
+        IconButton(
+          icon: const Icon(Icons.celebration),
+          onPressed: () => _askAI(context, beerInfo),
+        ),
+        // function: get random information about the sort of beer
+        IconButton(
+          icon: const Icon(Icons.info),
+          onPressed: () => _askAI(context, beerInfo),
+        ),
+        // function: delete beer item from beerlist
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () {
+
+          },
+        ),
+      ],
+    );
+  } 
 }
 
-// Funktion zum Erstellen einer Zeile in der Liste
-Widget _buildListRow(BeerInformation beerInfo) {
-  return Row(
-    children: [
-      Expanded(
-        child: ListTile(
-          title: Text(beerInfo.typeOfBeer),
-          // weitere informationen des element drunter anzeigen lassen 
-        ),
-      ),
-      Text('${beerInfo.selectedStartTime.hour}:${beerInfo.selectedStartTime.minute}'),
-      const SizedBox(width: 16), 
-      Text('${beerInfo.calculatedCoolingTime.hour}:${beerInfo.calculatedCoolingTime.minute}'),
-      const SizedBox(width: 12), 
-      IconButton(
-        icon: const Icon(Icons.celebration),
-        onPressed: () {
-          // Aktion für das erste Icon
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.info),
-        onPressed: () {
-          // Aktion für das zweite Icon
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: () {
-          // Aktion für das dritte Icon
-        },
-      ),
-    ],
-  );
-}
+
+
+  
+
+  

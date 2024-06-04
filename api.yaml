@@ -20,7 +20,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BeerRequest'
+              $ref: '#/components/schemas/Message'
         required: true
       responses:
         '200':

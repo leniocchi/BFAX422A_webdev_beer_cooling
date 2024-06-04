@@ -25,7 +25,7 @@ final _router = Router()
   ..post('/chat', _chatHandler);
 
 Response _rootHandler(Request req) {
-  return Response.ok('Hello, World!\n');
+  return Response.ok('Chat Server V0.0.1');
 }
 
 Future<Response> _chatHandler(Request request) async {
