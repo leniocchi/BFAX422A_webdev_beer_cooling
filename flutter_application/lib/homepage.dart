@@ -144,51 +144,66 @@ class _HomePageState extends State<HomePage> {
   }
 
   // function to ask AI
-  void _askAI(BuildContext context, BeerInformation beerInfo) async {
+  void _askAI(BuildContext context, BeerInformation beerInfo, int iconbutton) async {
 
     final api = Provider.of<ChatApi>(context, listen: false);
+    String messageText;
+
+    if (iconbutton == 1) {
+      messageText = "Gib einen witzigen Trinkspruch für das folgende Bier: ${beerInfo.typeOfBeer}";
+    } else if (iconbutton == 2) {
+      messageText = "Gib mir 3 witzige, kurze, knackige Fakten über die Biersorte: ${beerInfo.typeOfBeer}";
+    } else {
+      messageText = "Unbekannte Anfragequelle.";
+    } 
 
     var message = Message(
       timestamp: DateTime.now().toUtc(),
       author: MessageAuthorEnum.user,
-      message: "Gib einen witzigen Trinkspruch für das folgende Bier: ${beerInfo.typeOfBeer}",
+      message: messageText,
     );
 
     try {
-      // Senden der Anfrage
       var response = await api.chat(message);
 
-      // Überprüfen, ob die Antwort nicht null ist
       if (response != null && response.message != null) {
-        // Anzeigen der Antwort im Popup-Fenster
-        _showResponseDialog(context, response.message!);
+        _showResponseDialog(context, response.message!, iconbutton);
       } else {
-        // Falls die Antwort null ist, eine Fehlermeldung anzeigen
-        _showResponseDialog(context, "No response received from OpenAPI.");
+        _showResponseDialog(context, "No response received from OpenAPI.", iconbutton);
       }
     } catch (e) {
-      // Fehlerbehandlung und Anzeige einer Fehlermeldung
-      _showResponseDialog(context, "Error: $e");
+      _showResponseDialog(context, "Error: $e", iconbutton);
   }
   }
 
-  void _setAiAnswer(Message message) {
-    setState(() {
-      _aiAnswer = message.message ?? "<no message received>";
-    });
-  }
+  // void _setAiAnswer(Message message) {
+  //   setState(() {
+  //     _aiAnswer = message.message ?? "<no message received>";
+  //   });
+  // }
 
   // Funktion zum Anzeigen der Antwort im Popup-Fenster
-  void _showResponseDialog(BuildContext context, String response) {
+  void _showResponseDialog(BuildContext context, String response, int iconbutton) {
+    
+    String dialogTile;
+
+    if (iconbutton == 1) {
+      dialogTile = "Trinkspruch";
+    } else if (iconbutton == 2) {
+      dialogTile = "Bierfakten";
+    } else {
+      dialogTile = "Unbekannte Anfragequelle.";
+    } 
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Trinkspruch'),
+          title: Text(dialogTile),
           content: Text(response),
           actions: <Widget>[
             TextButton(
-              child: Text('OK'),
+              child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -363,12 +378,12 @@ class _HomePageState extends State<HomePage> {
         // function: get drinking toast
         IconButton(
           icon: const Icon(Icons.celebration),
-          onPressed: () => _askAI(context, beerInfo),
+          onPressed: () => _askAI(context, beerInfo, 1),
         ),
         // function: get random information about the sort of beer
         IconButton(
           icon: const Icon(Icons.info),
-          onPressed: () => _askAI(context, beerInfo),
+          onPressed: () => _askAI(context, beerInfo, 2),
         ),
         // function: delete beer item from beerlist
         IconButton(
