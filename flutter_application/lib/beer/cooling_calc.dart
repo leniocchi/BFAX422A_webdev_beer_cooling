@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application/beer/beer_information.dart';
 
 TimeOfDay calculateCoolingTime(BeerInformation beerInfo) {
-  double mass = beerInfo.container; 
-  double specificHeatCapacity = 4180; 
   double initialTemperature = beerInfo.whereWasTheBeer; 
   double finalTemperature = beerInfo.desiredTemperature;
 

@@ -1,6 +1,6 @@
 # Projekt Web-Entwicklung
 
-Im Rahmen meines Studiums der Angewandten Informatik an der Fachhochschule der Wirtschaft in Bergisch Gladbach entstand im Modul _Web-Entwicklung_ dieses Projekt. Die Aufgabe bestand darin, die bestehende [Web-App](https://github.com/csoltenborn/web_entwicklung_BFAX422A) induviduell zu erweitern.
+Im Rahmen meines Studiums der Angewandten Informatik an der Fachhochschule der Wirtschaft in Bergisch Gladbach entstand im Modul _Web-Entwicklung_ dieses Projekt. Die Aufgabe bestand darin, die bestehende [Web-App](https://github.com/csoltenborn/web_entwicklung_BFAX422A) individuell zu erweitern.
 
 ## Inhaltsverzeichnis
 
@@ -23,7 +23,6 @@ Die Hauptziele dieses Projekts sind:
 - Integration einer Storage-Verwaltung. 
 - Erstellung einer Formel zur Berechnung der Kühlzeit.
 
-hier screenshot der UI
 
 ## Die Web-App
 
@@ -213,7 +212,7 @@ children: [
 
 #### Bier-Objekt erstellen
 
-`_setUserInput` erstellt ein BeerInformation-Objekt basierend auf den Benutzereingaben, berechnet die Kühlzeit und fügt das Objekt zur Bierliste hinzu. Anschließend wird die Liste gespeichert. Die Hilfsfunktion `_createBeerInformationObject` wird benötigt, um ein BeerInformation-Objekt mit den aktuellen Zustandswerten zuerstellen. Mithilfe der `calculateCoolingTime()`- Funktion wird dann eine Uhrzeit für die Kühlzeit errechnet, welche dann in die Varaible `calculatedCoolingTime` geschrieben wird.
+`_setUserInput` erstellt ein BeerInformation-Objekt basierend auf den Benutzereingaben, berechnet die Kühlzeit und fügt das Objekt zur Bierliste hinzu. Anschließend wird die Liste gespeichert. Die Hilfsfunktion `_createBeerInformationObject` wird benötigt, um ein BeerInformation-Objekt mit den aktuellen Zustandswerten zuerstellen. 
 
 ```dart
 void _setUserInput() {
@@ -237,6 +236,40 @@ BeerInformation _createBeerInformationObject() {
     selectedStartTime: selectedStartTime,
     calculatedCoolingTime: calculatedCoolingTime,
   );
+}
+```
+
+Mithilfe der `calculateCoolingTime()`- Funktion wird dann eine Uhrzeit für die Kühlzeit errechnet, welche dann in die Varaible `calculatedCoolingTime` geschrieben wird.
+
+```dart
+TimeOfDay calculateCoolingTime(BeerInformation beerInfo) {
+  double initialTemperature = beerInfo.whereWasTheBeer; 
+  double finalTemperature = beerInfo.desiredTemperature;
+
+  double temperatureDifference = initialTemperature - finalTemperature;
+
+  double coolingCoefficient;
+
+  switch (beerInfo.whereToCoolTheBeer) {
+    case 4.0: 
+      coolingCoefficient = 0.01; 
+      break;
+    case -18.0: 
+      coolingCoefficient = 0.02; 
+      break;
+    default:
+      coolingCoefficient = 0.005; 
+  }
+
+  double coolingTimeMinutes = temperatureDifference / coolingCoefficient;
+
+  int coolingHours = (coolingTimeMinutes / 60).floor();
+  int coolingMinutes = (coolingTimeMinutes % 60).round();
+
+  int endHour = (beerInfo.selectedStartTime.hour + coolingHours + (beerInfo.selectedStartTime.minute + coolingMinutes) ~/ 60) % 24;
+  int endMinute = (beerInfo.selectedStartTime.minute + coolingMinutes) % 60;
+
+  return TimeOfDay(hour: endHour, minute: endMinute);
 }
 ```
 
