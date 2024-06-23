@@ -1,2 +1,4 @@
 *.dist
 openapi
+presentation
+.DS_Store
