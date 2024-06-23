@@ -7,6 +7,7 @@ Im Rahmen meines Studiums der Angewandten Informatik an der Fachhochschule der W
 - [Idee](#idee)
 - [Ziele und Vorgehensweise](#ziele-und-vorgehensweise)
 - [Die Web-App](#die-web-app)
+- [Ausblick](#ausblick)
 
 
 ## Idee
@@ -17,11 +18,7 @@ Das Projekt "Beer Cooling" entstand aus der Idee, eine Webanwendung zu entwickel
 
 ## Ziele und Vorgehensweise
 
-Die Hauptziele dieses Projekts sind:
-
-- Die Anpassung der Benutzeroberfläche.
-- Integration einer Storage-Verwaltung. 
-- Erstellung einer Formel zur Berechnung der Kühlzeit.
+Das Projekt umfasst mehrere Erweiterungen, darunter die Anpassung der Benutzeroberfläche, die Integration einer Speicherverwaltung und die Erstellung einer Formel zur Berechnung der Kühlzeit. Der Splashscreen dient als Begrüßungsbildschirm und leitet den Benutzer nach einer kurzen Verzögerung zur Hauptseite weiter. Auf der Hauptseite kann der Benutzer die relevanten Informationen eingeben und die berechnete Kühlzeit abrufen. Zudem wurden Funktionen zur Speicherung und zum Laden der Bierinformationen implementiert, um die Eingaben des Benutzers zwischen den Sitzungen zu erhalten.
 
 
 ## Die Web-App
@@ -367,3 +364,7 @@ Future<void> saveBeerList(List<BeerInformation> beerList) async {
   await prefs.setStringList('beerList', beerListJson);
 }
 ```
+
+## Ausblick
+
+Aktuell gibt es jedoch noch ein Issue bei der Berechnung der Kühlzeit, das behoben werden muss. In zukünftigen Versionen der Anwendung ist geplant, dieses Issue zu lösen und die Funktionalität weiter zu erweitern. Eine interessante Erweiterung wäre beispielsweise die Implementierung einer Wein-Kühlzeitberechnung, um die Anwendung auch für Weinliebhaber attraktiv zu machen.
